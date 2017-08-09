@@ -49,7 +49,7 @@ class sendRequest(eg.ActionBase):
         if ssl:
             conn = httplib.HTTPSConnection(host, timeout=(timeout if timeout > 0 else None), context=(ssl._create_unverified_context() if not sslVerify else None))
         else:
-            conn = httplib.HTTPSConnection(host, timeout=(timeout if timeout > 0 else None))
+            conn = httplib.HTTPConnection(host, timeout=(timeout if timeout > 0 else None))
         conn.request(method, uri, body if method in self.body_methods else None)
         ret_val["response"] = conn.getresponse()
         ret_val["data"] = ret_val["response"].read()
@@ -87,7 +87,7 @@ class sendRequest(eg.ActionBase):
             (sslVerifyCtrl, (4, 1), (1, 1), align),
             (panel.StaticText("Timeout (seconds)"), (5, 0), (1, 1), align),
             (timeoutCtrl, (5, 1), (1, 1), align),
-            (panel.StaticText("POST/PUT Body"), (6, 0), (1, 1), align),
+            (panel.StaticText("Body\n(POST/PUT only)"), (6, 0), (1, 1), align),
             (bodyCtrl, (6, 1), (1, 1), expand),
         ])
         sizer.AddGrowableCol(1)
@@ -96,15 +96,13 @@ class sendRequest(eg.ActionBase):
         while panel.Affirmed():
             panel.SetResult(
                 hostCtrl.GetValue(),
-                uriCtrl.GetValue(),
-                methodCtrl.GetValue(),
-                bodyCtrl.GetValue(),
-                timeoutCtrl.GetValue(),
+                uriCtrl.GetValue() or "/",
+                methodCtrl.GetValue() or 0,
+                bodyCtrl.GetValue() or None,
+                timeoutCtrl.GetValue() or 0,
                 sslCtrl.GetValue(),
                 sslVerifyCtrl.GetValue()
             )
-
-
 
 #
 # Editor modelines  -  https://www.wireshark.org/tools/modelines.html
