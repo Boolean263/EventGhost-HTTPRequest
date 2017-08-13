@@ -8,7 +8,7 @@ eg.RegisterPlugin(
     version = "0.0.1",
     kind = "other",
     description = "Send HTTP requests.",
-    url = "https://github.com/Boolean263/TBD",
+    url = "https://github.com/Boolean263/EventGhost-HTTPRequest",
     guid = "{dea987ff-3281-4da2-b0e9-c396b4260c37}",
 )
 

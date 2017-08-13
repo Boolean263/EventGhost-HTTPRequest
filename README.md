@@ -39,7 +39,8 @@ feedback and request support there. This is my first EventGhost plugin
 so I look forward to hearing what I should be doing better/differently.
 
 I also accept issues and pull requests from the official GitHub repo for
-this project, [Boolean263/TBD](https://github.com/Boolean263/TBD).
+this project,
+[Boolean263/EventGhost-HTTPRequest](https://github.com/Boolean263/EventGhost-HTTPRequest).
 
 ## Author
 
