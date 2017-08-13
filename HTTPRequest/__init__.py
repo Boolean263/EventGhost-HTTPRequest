@@ -37,20 +37,26 @@ class sendRequest(eg.ActionBase):
     body_methods = ("POST", "PUT")
 
     def __call__(self, host, uri="/", method="GET", body=None, timeout=0, ssl=False, sslVerify=True):
-        if uri == "":
+        if not uri:
             uri = "/"
+        if not timeout:
+            timeout = None
 
         if isinstance(method, Number):
             method = self.methods[method]
-        elif method not in self.methods:
+        if method not in self.methods:
             raise ValueError("Invalid request method")
+        if method not in self.body_methods:
+            body = None
 
         ret_val = dict()
+        conn = None
         if ssl:
-            conn = httplib.HTTPSConnection(host, timeout=(timeout if timeout > 0 else None), context=(ssl._create_unverified_context() if not sslVerify else None))
+            conn = httplib.HTTPSConnection(host, timeout=timeout,
+                context=(ssl._create_unverified_context() if not sslVerify else None))
         else:
-            conn = httplib.HTTPConnection(host, timeout=(timeout if timeout > 0 else None))
-        conn.request(method, uri, body if method in self.body_methods else None)
+            conn = httplib.HTTPConnection(host, timeout=timeout)
+        conn.request(method, uri, body)
         ret_val["response"] = conn.getresponse()
         ret_val["data"] = ret_val["response"].read()
         conn.close()
@@ -63,14 +69,14 @@ class sendRequest(eg.ActionBase):
     def Configure(self, host="192.168.0.1", uri="/", method="GET", body="", timeout=0, ssl=False, sslVerify=True):
         panel = eg.ConfigPanel(self)
         methodCtrl = panel.Choice(method if isinstance(method, Number) else self.methods.index(method), choices=self.methods)
-        hostCtrl = panel.TextCtrl(host)
+        hostCtrl = panel.TextCtrl(host or "")
         sslCtrl = panel.CheckBox(ssl, "Use HTTPS")
         sslVerifyCtrl = panel.CheckBox(sslVerify, "Verify certificate")
         timeoutCtrl = panel.SpinIntCtrl(timeout, min=0, max=600)
-        uriCtrl = panel.TextCtrl(uri)
+        uriCtrl = panel.TextCtrl(uri or "/")
         bodyCtrl = panel.TextCtrl("\n\n", style=wx.TE_MULTILINE)
         bodyCtrlHeight = bodyCtrl.GetBestSize()[1]
-        bodyCtrl.ChangeValue(body)
+        bodyCtrl.ChangeValue(body or "")
         bodyCtrl.SetMinSize((-1, bodyCtrlHeight))
 
         sizer = wx.GridBagSizer(5, 5)
@@ -98,7 +104,7 @@ class sendRequest(eg.ActionBase):
                 hostCtrl.GetValue(),
                 uriCtrl.GetValue() or "/",
                 methodCtrl.GetValue() or 0,
-                bodyCtrl.GetValue() or None,
+                bodyCtrl.GetValue() or "",
                 timeoutCtrl.GetValue() or 0,
                 sslCtrl.GetValue(),
                 sslVerifyCtrl.GetValue()
