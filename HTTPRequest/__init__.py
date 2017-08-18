@@ -5,7 +5,7 @@ import eg
 eg.RegisterPlugin(
     name = "HTTPRequest",
     author = "David Perry <d.perry@utoronto.ca>",
-    version = "0.0.1",
+    version = "0.0.2",
     kind = "other",
     description = "Send HTTP requests.",
     url = "https://github.com/Boolean263/EventGhost-HTTPRequest",
@@ -24,23 +24,21 @@ class HTTPRequest(eg.PluginBase):
     def __start__(self):
         print "HTTPRequest Plugin started"
 
-    #def Configure(self):
-    #    panel = eg.ConfigPanel(self)
-    #    while panel.Affirmed():
-    #        panel.SetResult()
-
 class sendRequest(eg.ActionBase):
     name = "Send HTTP request"
     description = "Sends an HTTP request."
 
-    methods = ("GET", "POST", "HEAD", "PUT", "DELETE")
-    body_methods = ("POST", "PUT")
+    methods = ("GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "PATCH")
+    body_methods = ("POST", "PUT", "PATCH")
 
-    def __call__(self, host, uri="/", method="GET", body=None, timeout=0, ssl=False, sslVerify=True):
+    def __call__(self, host, uri="/", method="GET", body=None, timeout=0, ssl=False, sslVerify=True, parseBody=False):
         if not uri:
             uri = "/"
         if not timeout:
             timeout = None
+
+        host = eg.ParseString(host)
+        uri = eg.ParseString(uri)
 
         if isinstance(method, Number):
             method = self.methods[method]
@@ -48,6 +46,9 @@ class sendRequest(eg.ActionBase):
             raise ValueError("Invalid request method")
         if method not in self.body_methods:
             body = None
+
+        if body is not None and parseBody:
+            body = eg.ParseString(body)
 
         ret_val = dict()
         conn = None
@@ -66,12 +67,13 @@ class sendRequest(eg.ActionBase):
         method = self.methods[method] if isinstance(method, Number) else method
         return "{} {}://{}{}".format(method, "https" if ssl else "http", host, uri)
 
-    def Configure(self, host="192.168.0.1", uri="/", method="GET", body="", timeout=0, ssl=False, sslVerify=True):
+    def Configure(self, host="192.168.0.1", uri="/", method="GET", body="", timeout=0, ssl=False, sslVerify=True, parseBody=False):
         panel = eg.ConfigPanel(self)
         methodCtrl = panel.Choice(method if isinstance(method, Number) else self.methods.index(method), choices=self.methods)
         hostCtrl = panel.TextCtrl(host or "")
         sslCtrl = panel.CheckBox(ssl, "Use HTTPS")
         sslVerifyCtrl = panel.CheckBox(sslVerify, "Verify certificate")
+        parseBodyCtrl = panel.CheckBox(parseBody, "Parse body for EventGhost variables")
         timeoutCtrl = panel.SpinIntCtrl(timeout, min=0, max=600)
         uriCtrl = panel.TextCtrl(uri or "/")
         bodyCtrl = panel.TextCtrl("\n\n", style=wx.TE_MULTILINE)
@@ -89,12 +91,14 @@ class sendRequest(eg.ActionBase):
             (hostCtrl, (1, 1), (1, 1), expand),
             (panel.StaticText("URI"), (2, 0), (1, 1), align),
             (uriCtrl, (2, 1), (1, 1), expand),
-            (sslCtrl, (3, 1), (1, 1), align),
+            (sslCtrl, (3, 1), (1, 1), expand),
             (sslVerifyCtrl, (4, 1), (1, 1), align),
             (panel.StaticText("Timeout (seconds)"), (5, 0), (1, 1), align),
             (timeoutCtrl, (5, 1), (1, 1), align),
-            (panel.StaticText("Body\n(POST/PUT only)"), (6, 0), (1, 1), align),
+            (panel.StaticText("Body\n(POST/PUT/PATCH)"), (6, 0), (1, 1), align),
             (bodyCtrl, (6, 1), (1, 1), expand),
+            (parseBodyCtrl, (7, 1), (1, 1), expand),
+            (panel.StaticText("EventGhost variables in host and URI are always expanded.\nUse a double '{{' to prevent its use as an expansion."), (8, 1), (1, 1), expand),
         ])
         sizer.AddGrowableCol(1)
         panel.sizer.Add(sizer, 1, expand)
@@ -107,7 +111,8 @@ class sendRequest(eg.ActionBase):
                 bodyCtrl.GetValue() or "",
                 timeoutCtrl.GetValue() or 0,
                 sslCtrl.GetValue(),
-                sslVerifyCtrl.GetValue()
+                sslVerifyCtrl.GetValue(),
+                parseBodyCtrl.GetValue()
             )
 
 #
