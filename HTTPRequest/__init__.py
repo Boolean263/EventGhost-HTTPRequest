@@ -5,7 +5,7 @@ import eg
 eg.RegisterPlugin(
     name = "HTTPRequest",
     author = "David Perry <d.perry@utoronto.ca>",
-    version = "0.0.2",
+    version = "0.1.0",
     kind = "other",
     description = "Send HTTP requests.",
     url = "https://github.com/Boolean263/EventGhost-HTTPRequest",
@@ -13,7 +13,7 @@ eg.RegisterPlugin(
 )
 
 import wx
-import httplib
+import requests
 from numbers import Number
 
 class HTTPRequest(eg.PluginBase):
@@ -50,20 +50,16 @@ class sendRequest(eg.ActionBase):
         if body is not None and parseBody:
             body = eg.ParseString(body)
 
-        ret_val = dict()
-        conn = None
-        if ssl:
-            conn = httplib.HTTPSConnection(host, timeout=timeout,
-                context=(ssl._create_unverified_context() if not sslVerify else None))
-        else:
-            conn = httplib.HTTPConnection(host, timeout=timeout)
-        conn.request(method, uri, body)
-        ret_val["response"] = conn.getresponse()
-        ret_val["data"] = ret_val["response"].read()
-        conn.close()
+        ret_val = requests.request(method,
+                "{}://{}{}".format("https" if ssl else "http", host, uri),
+                verify=sslVerify,
+                timeout=timeout,
+                data=body,
+                stream=False)
+        ret_val.close()
         return ret_val
 
-    def GetLabel(self, host, uri="/", method="GET", body=None, timeout=0, ssl=False, sslVerify=True):
+    def GetLabel(self, host, uri="/", method="GET", body=None, timeout=0, ssl=False, sslVerify=True, parseBody=False):
         method = self.methods[method] if isinstance(method, Number) else method
         return "{} {}://{}{}".format(method, "https" if ssl else "http", host, uri)
 
